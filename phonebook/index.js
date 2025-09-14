@@ -1,11 +1,13 @@
+require('dotenv').config()
 const express = require('express')
+const Person = require('./models/person.js')
 const app = express()
 const morgan = require('morgan')
-const cors = require('cors')
+//const cors = require('cors')
 
 
 app.use(express.json())
-app.use(cors())
+//app.use(cors())
 app.use(express.static('dist'))
 
 morgan.token('body', (request, response) => {
@@ -14,32 +16,12 @@ morgan.token('body', (request, response) => {
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-
-let persons = [
-    {
-      "id": "1",
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": "2",
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": "3",
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": "4",
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
+const persons = []
 
 app.get('/api/persons', (request, response) => {
-    response.json(persons)
+    Person.find({}).then(persons => {
+        response.json(persons)
+    })
 })
 
 app.get('/info', (request, response) => {
@@ -77,32 +59,24 @@ app.delete('/api/persons/:id', (request, response) => {
 
 app.post('/api/persons', (request, response) => {
     const body = request.body
-    const names = persons.map(n => n.name)
-
     if(!body.name || !body.number) {
         return response.status(404).json(
             {
                 error: "a contact must have a name and a number"
             }
         )
-    } else if (names.includes(body.name)) {
-        return response.status(400).json(
-            {
-                error: "contacy already exists."
-            }
-        )
     }
-    const person = {
+
+    const person = new Person({
         name: body.name,
-        number: body.number,
-        id: String(Math.floor(Math.random()*1000))
-    }
-    persons = persons.concat(person)
-    response.json(person)
-    
+        number: body.number
+    })
+    person.save().then(savedCont => {
+        response.json(savedCont)
+    })    
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`The mf App is running now on port ${PORT}`);
 })
