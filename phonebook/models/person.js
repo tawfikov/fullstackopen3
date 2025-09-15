@@ -11,8 +11,22 @@ mongoose.connect(url).then(result => {
 })
 
 const personSchema = mongoose.Schema({
-    name: String,
-    number: String,
+    name: {
+        type: String,
+        minLength: 5,
+        required: true
+    },
+    number: {
+        type: String,
+        minLength: 8,
+        required: true,
+        validate: {
+            validator: function(v) {
+                return /^\d{2,3}-\d+$/.test(v)
+            },
+            message: props => `${props.value} is not a valid phone number!`
+        }
+    }
 })
 
 personSchema.set('toJSON', {
@@ -22,5 +36,7 @@ personSchema.set('toJSON', {
         delete returnedObject.__v
     }
 })
+
+personSchema.set('validateBeforeSave', true)
 
 module.exports = mongoose.model('Person', personSchema)

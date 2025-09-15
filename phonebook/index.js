@@ -12,15 +12,15 @@ morgan.token('body', (request, response) => {
 })
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-const persons = []
-
 const errorHandler = (error, request, response, next) => {
     console.error(error.message)
 
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted id' })
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).send({error: 'Name is too short and/or number format is invalid, double check your input.'})
     }
-    return response.status(500).send({ error: 'something went wrong on the server' })
+    next(error)
 }
 
 app.get('/api/persons', (request, response, next) => {
@@ -71,7 +71,7 @@ app.get('/api/persons/:id', (request, response, next) => {
 })
 
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     const body = request.body
     if(!body.name || !body.number) {
         return response.status(404).json(
@@ -87,7 +87,7 @@ app.post('/api/persons', (request, response) => {
     })
     person.save().then(savedCont => {
         response.json(savedCont)
-    })    
+    }).catch(error => next(error))
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
